@@ -35,7 +35,7 @@ public class MainLayoutController {
 
     private ExecutorService service;
 
-    private Manager manager = Manager.getInstance();
+    // private Manager manager = Manager.getInstance();
 
     // private
 
