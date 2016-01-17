@@ -5,16 +5,23 @@
 	<artifactId>FxSample</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.3.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>14.0.1</version>
+		</dependency>
+	</dependencies>
+
 	<build>
-		<!-- <sourceDirectory>src</sourceDirectory>
-		<resources>
-			<resource>
-				<directory>src</directory>
-				<excludes>
-					<exclude>**/*.java</exclude>
-				</excludes>
-			</resource>
-		</resources> -->
+		<!-- <sourceDirectory>src</sourceDirectory> <resources> <resource> <directory>src</directory> 
+			<excludes> <exclude>**/*.java</exclude> </excludes> </resource> </resources> -->
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>

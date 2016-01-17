@@ -17,13 +17,12 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
-import shnulaa.fx.controller.MainLayoutController;
 
 public class MainGui extends Application {
     private static Logger logger = Logger.getLogger(MainGui.class.getName());
     private Stage primaryStage;
     private Scene rootScene;
-    private MainLayoutController controller;
+    // private MainLayoutController controller;
     private TrayIcon trayIcon;
 
     public static void main(String[] args) {
@@ -49,7 +48,7 @@ public class MainGui extends Application {
             primaryStage.setScene(rootScene);
             primaryStage.setResizable(false);
 
-            controller = mainLayoutLoader.getController();
+            // controller = mainLayoutLoader.getController();
             // controller.setMainGui(this);
 
             addToTray();
