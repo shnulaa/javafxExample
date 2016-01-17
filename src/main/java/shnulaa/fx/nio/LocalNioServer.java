@@ -33,6 +33,7 @@ public class LocalNioServer implements Runnable {
         // this.port = port;
         this.textArea = textArea;
         this.manager = Manager.getInstance();
+        this.manager.setServer(server);
         try {
             this.server = SelectorProvider.provider().openServerSocketChannel();
             server.configureBlocking(false);
@@ -89,6 +90,7 @@ public class LocalNioServer implements Runnable {
                         ByteBuffer buffer = ByteBuffer.allocate(16384);
                         sc.read(buffer);
                         outPut(new String(buffer.array()));
+
                     } else if (key.isWritable()) {
                         SocketChannel sc = (SocketChannel) key.channel();
 

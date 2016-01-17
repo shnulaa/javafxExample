@@ -1,6 +1,9 @@
 package shnulaa.fx.manager;
 
+import java.io.IOException;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
@@ -20,12 +23,35 @@ public class Manager {
 
     private final Map<SocketChannel, ClientInfo> cacheInfo = Maps.newConcurrentMap();
     private final AtomicLong clientId = new AtomicLong(1);
+    private ServerSocketChannel server;
+
+    public void setServer(ServerSocketChannel server) {
+        this.server = server;
+    }
 
     private Manager() {
     }
 
     public boolean isLogin(final SocketChannel channel) {
         return cacheInfo.containsKey(channel);
+    }
+
+    public void stop() {
+        Iterator<SocketChannel> i = cacheInfo.keySet().iterator();
+        while (i.hasNext()) {
+            SocketChannel sc = (SocketChannel) i.next();
+            if (sc != null && sc.isOpen()) {
+                try {
+                    sc.close();
+                } catch (IOException e) {
+                    // log.error("IOException occurred when close
+                    // socketChannel..", e);
+                }
+            }
+        }
+        
+        
+
     }
 
     /**

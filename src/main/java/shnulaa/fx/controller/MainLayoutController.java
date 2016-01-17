@@ -12,6 +12,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import shnulaa.fx.manager.Manager;
 import shnulaa.fx.nio.LocalNioServer;
 import shnulaa.fx.pool.TPools;
 
@@ -33,7 +34,10 @@ public class MainLayoutController {
     private TextArea listenArea;
 
     private ExecutorService service;
-//    private 
+
+    private Manager manager = Manager.getInstance();
+
+    // private
 
     // private TPools pool;
 
@@ -59,18 +63,14 @@ public class MainLayoutController {
                 return;
             }
 
-            ExecutorService service = Executors.newSingleThreadExecutor(new ThreadFactory() {
-                @Override
-                public Thread newThread(Runnable r) {
-                    final Thread t = new Thread();
-                    t.setDaemon(true);
-                    t.setName("Nio_server_Thread");
-                    return t;
-                }
-            });
+            service = Executors.newSingleThreadExecutor();
 
-            final Runnable listenWorker = new LocalNioServer(listenArea, port);
-            service.execute(listenWorker);
+            // final Runnable listenWorker = ;
+            service.execute(new LocalNioServer(listenArea, port));
+
+            listen.setDisable(true);
+            stop.setDisable(false);
+
         } catch (Exception ex) {
             if (ex instanceof NumberFormatException) {
                 showAlert("Nio demo", "Port is not number..", Alert.AlertType.ERROR);
@@ -82,7 +82,7 @@ public class MainLayoutController {
 
     @FXML
     private void handlelStop() {
-
+        // manager.s
     }
 
     private void showAlert(String title, String message, Alert.AlertType type) {
