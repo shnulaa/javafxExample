@@ -3,6 +3,7 @@ package shnulaa.fx.nio;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -49,7 +50,7 @@ public class LocalNioServer extends NioServerBase {
             server.bind(new InetSocketAddress(port));
             selector = Selector.open();
             server.register(selector, SelectionKey.OP_ACCEPT);
-            outPut("listening port:" + port);
+            outPut("listening port: " + port + " successfully..", true);
         } catch (IOException e) {
             log.error("initialize Nio server error", e);
             throw new NioException("initialize Nio server error", e);
@@ -60,62 +61,99 @@ public class LocalNioServer extends NioServerBase {
     @Override
     protected void progress(SelectionKey key) throws IOException {
         if (key.isAcceptable()) {
-            ServerSocketChannel c = (ServerSocketChannel) key.channel();
-            SocketChannel sc = c.accept(); // receive socket
-            sc.configureBlocking(false);
-            sc.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+            accept(key);
         } else if (key.isReadable()) {
-            SocketChannel sc = (SocketChannel) key.channel();
-
-            readBuffer.clear();
-            sc.read(readBuffer);
-            final String context = decode(readBuffer).replaceAll("\n", StringUtils.EMPTY);
-
-            Status status = getStatus(sc);
-            switch (status) {
-            case NOT_LOGIN:
-                // not login yet
-                login(sc, context, Thread.currentThread());
-                outPut("User:" + context + " login successfully..");
-                sc.register(selector, SelectionKey.OP_WRITE);
-                break;
-            case LOGIN_SUCCESS:
-                setStatus(sc, Status.CHAT);
-                break;
-            case CHAT:
-                final ClientInfo info = getInfo(sc);
-                final String message = info.getName() + " said:" + context;
-                outPut(message);
-                break;
-            default:
-                break;
-            }
-            sc.register(selector, SelectionKey.OP_WRITE);
+            read(key);
         } else if (key.isWritable()) {
-            SocketChannel sc = (SocketChannel) key.channel();
-
-            String writeContext = StringUtils.EMPTY;
-            Status status = getStatus(sc);
-
-            switch (status) {
-            case NOT_LOGIN:
-                writeContext = Constant.PROPMT;
-                break;
-            case LOGIN_SUCCESS:
-                writeContext = Constant.LOGIN_SUCCESS;
-                break;
-            case CHAT:
-                writeContext = Constant.CHAT;
-                break;
-            default:
-                break;
-            }
-
-            ByteBuffer b = ByteBuffer.wrap(writeContext.getBytes(Charset.forName("UTF-8")));
-            sc.write(b);
-            sc.register(selector, SelectionKey.OP_READ);
-
+            write(key);
+        } else {
+            log.warn("key is not Acceptable, Readable and Writable..");
         }
+    }
+
+    /**
+     * accept
+     * 
+     * @param key
+     * @throws IOException
+     * @throws ClosedChannelException
+     */
+    private void accept(SelectionKey key) throws IOException, ClosedChannelException {
+        ServerSocketChannel c = (ServerSocketChannel) key.channel();
+        SocketChannel sc = c.accept(); // receive socket
+        sc.configureBlocking(false);
+        sc.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+    }
+
+    /**
+     * read
+     * 
+     * @param key
+     * @throws IOException
+     * @throws ClosedChannelException
+     */
+    private void read(SelectionKey key) throws IOException, ClosedChannelException {
+        SocketChannel sc = (SocketChannel) key.channel();
+
+        readBuffer.clear();
+        sc.read(readBuffer);
+        final String readed = decode(readBuffer, true);
+
+        String message = StringUtils.EMPTY;
+        Status status = getStatus(sc);
+        switch (status) {
+        case NOT_LOGIN:
+            login(sc, readed, Thread.currentThread());
+            message = "User:" + readed + " login successfully..";
+            outPut(message, true);
+            break;
+        case LOGIN_SUCCESS:
+        case CHAT:
+            setStatus(sc, Status.CHAT);
+            final ClientInfo info = getInfo(sc);
+            message = info.getName() + " said:" + readed;
+            outPut(message);
+            break;
+        default:
+            break;
+        }
+
+        if (StringUtils.isNotEmpty(message)) {
+            notify(sc, message);
+        }
+        sc.register(selector, SelectionKey.OP_WRITE);
+    }
+
+    /**
+     * write
+     * 
+     * @param key
+     * @throws IOException
+     * @throws ClosedChannelException
+     */
+    private void write(SelectionKey key) throws IOException, ClosedChannelException {
+        SocketChannel sc = (SocketChannel) key.channel();
+
+        String writeContext = StringUtils.EMPTY;
+        Status status = getStatus(sc);
+
+        switch (status) {
+        case NOT_LOGIN:
+            writeContext = Constant.PROPMT;
+            break;
+        case LOGIN_SUCCESS:
+            writeContext = Constant.LOGIN_SUCCESS;
+            break;
+        case CHAT:
+            writeContext = Constant.CHAT;
+            break;
+        default:
+            break;
+        }
+
+        ByteBuffer b = ByteBuffer.wrap(writeContext.getBytes(Charset.forName("UTF-8")));
+        sc.write(b);
+        sc.register(selector, SelectionKey.OP_READ);
     }
 
     @Override

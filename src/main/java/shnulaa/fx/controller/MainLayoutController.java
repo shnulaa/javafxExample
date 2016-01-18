@@ -11,7 +11,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import shnulaa.fx.manager.Manager;
 import shnulaa.fx.nio.LocalNioServer;
 import shnulaa.fx.nio.NioServerBase;
 
@@ -37,15 +36,10 @@ public class MainLayoutController {
 
     private NioServerBase base;
 
-    // private Manager manager = Manager.getInstance();
-
-    // private
-
-    // private TPools pool;
-
     @FXML
     private void initialize() {
         System.out.println("initialize");
+        listenPort.setText("1234");
         listen.setDisable(false);
         stop.setDisable(true);
     }
@@ -85,8 +79,6 @@ public class MainLayoutController {
     private void handlelStop() {
         listen.setDisable(false);
         stop.setDisable(true);
-
-        // Manager.getInstance().stop();
 
         if (base != null) {
             base.stop();

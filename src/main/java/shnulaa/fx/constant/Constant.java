@@ -8,8 +8,7 @@ public class Constant {
             + "===========================================================" + BR + "Please input name to login:";
 
     public static final String LOGIN_SUCCESS = "login successfully.." + BR + ">>  ";
-
     public static final String CHAT = ">>  ";
-
     public static final int BUFFER_SIZE = 16384;
+    public static final String SPLIT = "==================================";
 }
