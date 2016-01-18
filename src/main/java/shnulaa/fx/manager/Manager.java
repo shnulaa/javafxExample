@@ -6,11 +6,14 @@ import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Maps;
 
 import shnulaa.fx.info.ClientInfo;
+import shnulaa.fx.pool.TPools;
 
 /**
  * 
@@ -19,7 +22,7 @@ import shnulaa.fx.info.ClientInfo;
  */
 public class Manager {
 
-    private static final Logger log = Logger.getLogger(Manager.class.getName());
+    private static Logger log = LoggerFactory.getLogger(Manager.class);
 
     private final Map<SocketChannel, ClientInfo> cacheInfo = Maps.newConcurrentMap();
     private final AtomicLong clientId = new AtomicLong(1);
@@ -36,6 +39,10 @@ public class Manager {
         return cacheInfo.containsKey(channel);
     }
 
+    public ClientInfo getInfo(final SocketChannel channel) {
+        return cacheInfo.get(channel);
+    }
+
     public void stop() {
         Iterator<SocketChannel> i = cacheInfo.keySet().iterator();
         while (i.hasNext()) {
@@ -44,13 +51,27 @@ public class Manager {
                 try {
                     sc.close();
                 } catch (IOException e) {
-                    // log.error("IOException occurred when close
-                    // socketChannel..", e);
+                    log.error("IOException occurred when close socketChannel..", e);
                 }
             }
+
+            ClientInfo info = getInfo(sc);
+            Thread t = info.getThread();
+            if (t != null) {
+                t.interrupt();
+            }
+
         }
-        
-        
+
+        if (server != null) {
+            try {
+                server.close();
+            } catch (IOException e) {
+                log.error("IOException occurred when close ServerSocketChannel..", e);
+            }
+        }
+
+        TPools.getInstance().stopInternal();
 
     }
 
@@ -62,7 +83,7 @@ public class Manager {
      */
     public void registeClient(final SocketChannel channel, final String name, final Thread t) {
         if (cacheInfo.containsKey(channel)) {
-            log.warning("name: {} already registed..");
+            log.warn("name: {} already registed..", name);
         } else {
             long id = clientId.getAndIncrement();
             final ClientInfo c = new ClientInfo(id, name, t);

@@ -2,7 +2,6 @@ package shnulaa.fx.controller;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -14,8 +13,9 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import shnulaa.fx.manager.Manager;
 import shnulaa.fx.nio.LocalNioServer;
-import shnulaa.fx.pool.TPools;
+import shnulaa.fx.nio.NioServerBase;
 
+@SuppressWarnings("restriction")
 public class MainLayoutController {
 
     @FXML
@@ -34,6 +34,8 @@ public class MainLayoutController {
     private TextArea listenArea;
 
     private ExecutorService service;
+
+    private NioServerBase base;
 
     // private Manager manager = Manager.getInstance();
 
@@ -64,9 +66,8 @@ public class MainLayoutController {
             }
 
             service = Executors.newSingleThreadExecutor();
-
-            // final Runnable listenWorker = ;
-            service.execute(new LocalNioServer(listenArea, port));
+            base = new LocalNioServer(listenArea, port);
+            service.execute(base);
 
             listen.setDisable(true);
             stop.setDisable(false);
@@ -82,9 +83,26 @@ public class MainLayoutController {
 
     @FXML
     private void handlelStop() {
-        // manager.s
+        listen.setDisable(false);
+        stop.setDisable(true);
+
+        // Manager.getInstance().stop();
+
+        if (base != null) {
+            base.stop();
+        }
+
+        if (service != null) {
+            service.shutdown();
+        }
     }
 
+    /**
+     * 
+     * @param title
+     * @param message
+     * @param type
+     */
     private void showAlert(String title, String message, Alert.AlertType type) {
         Alert a = new Alert(type);
         a.setTitle(title);

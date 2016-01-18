@@ -25,11 +25,13 @@ public class ClientInfo implements Serializable {
         this.id = id;
         this.name = name;
         this.thread = t;
+        this.setStatus(Status.NOT_LOGIN);
     }
 
     private long id;
     private String name;
     private Thread thread;
+    private Status status;
     private Queue<String> history = Queues.newConcurrentLinkedQueue();
 
     public void addMessage(String message) {
@@ -58,6 +60,18 @@ public class ClientInfo implements Serializable {
 
     public void setThread(Thread thread) {
         this.thread = thread;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
+    public static enum Status {
+        NOT_LOGIN, LOGIN_SUCCESS, CHAT, QUIT
     }
 
 }

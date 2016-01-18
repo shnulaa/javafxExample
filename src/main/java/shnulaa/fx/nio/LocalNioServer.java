@@ -9,106 +9,123 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
 import java.nio.charset.Charset;
-import java.util.Iterator;
+
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javafx.scene.control.TextArea;
 import shnulaa.fx.constant.Constant;
 import shnulaa.fx.exception.NioException;
-import shnulaa.fx.manager.Manager;
+import shnulaa.fx.info.ClientInfo;
+import shnulaa.fx.info.ClientInfo.Status;
+import shnulaa.fx.message.MessageOutputImpl;
 
 /**
  * 
  * @author shnulaa
  *
  */
-public class LocalNioServer implements Runnable {
+@SuppressWarnings("restriction")
+public class LocalNioServer extends NioServerBase {
 
-    // private int port;
+    private static Logger log = LoggerFactory.getLogger(LocalNioServer.class);
+
     private ServerSocketChannel server;
-    private Selector selector;
-    private TextArea textArea;
-    private Manager manager;
 
     public LocalNioServer(TextArea textArea, int port) {
-        // this.port = port;
-        this.textArea = textArea;
-        this.manager = Manager.getInstance();
-        this.manager.setServer(server);
+        this(new MessageOutputImpl(textArea), port);
+    }
+
+    public LocalNioServer(MessageOutputImpl outputImpl, int port) {
+        super(outputImpl, port);
+    }
+
+    @Override
+    protected Selector initSelector() {
         try {
             this.server = SelectorProvider.provider().openServerSocketChannel();
             server.configureBlocking(false);
             server.bind(new InetSocketAddress(port));
-            this.selector = Selector.open();
+            selector = Selector.open();
             server.register(selector, SelectionKey.OP_ACCEPT);
             outPut("listening port:" + port);
         } catch (IOException e) {
+            log.error("initialize Nio server error", e);
             throw new NioException("initialize Nio server error", e);
         }
-    }
-
-    private void outPut(String message) {
-        textArea.appendText(message + Constant.BR);
+        return selector;
     }
 
     @Override
-    public void run() {
-        Thread t = Thread.currentThread();
-        while (!t.isInterrupted()) {
-            try {
+    protected void progress(SelectionKey key) throws IOException {
+        if (key.isAcceptable()) {
+            ServerSocketChannel c = (ServerSocketChannel) key.channel();
+            SocketChannel sc = c.accept(); // receive socket
+            sc.configureBlocking(false);
+            sc.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+        } else if (key.isReadable()) {
+            SocketChannel sc = (SocketChannel) key.channel();
 
-                int r = selector.select();
-                if (r <= 0) {
-                    continue;
-                }
+            readBuffer.clear();
+            sc.read(readBuffer);
+            final String context = decode(readBuffer).replaceAll("\n", StringUtils.EMPTY);
 
-                Iterator<SelectionKey> it = selector.selectedKeys().iterator();
-                while (it.hasNext()) {
-                    SelectionKey key = it.next();
-                    it.remove();
+            Status status = getStatus(sc);
+            switch (status) {
+            case NOT_LOGIN:
+                // not login yet
+                login(sc, context, Thread.currentThread());
+                outPut("User:" + context + " login successfully..");
+                sc.register(selector, SelectionKey.OP_WRITE);
+                break;
+            case LOGIN_SUCCESS:
+                setStatus(sc, Status.CHAT);
+                break;
+            case CHAT:
+                final ClientInfo info = getInfo(sc);
+                final String message = info.getName() + " said:" + context;
+                outPut(message);
+                break;
+            default:
+                break;
+            }
+            sc.register(selector, SelectionKey.OP_WRITE);
+        } else if (key.isWritable()) {
+            SocketChannel sc = (SocketChannel) key.channel();
 
-                    if (!key.isValid()) {
-                        outPut("key is not valid!!");
-                        continue;
-                    }
+            String writeContext = StringUtils.EMPTY;
+            Status status = getStatus(sc);
 
-                    if (key.isConnectable()) {
-                        // ServerSocketChannel c = (ServerSocketChannel)
-                        // key.channel();
-                        outPut("Connectable");
-                    } else if (key.isAcceptable()) {
-                        outPut("Acceptable");
-                        ServerSocketChannel c = (ServerSocketChannel) key.channel();
-                        SocketChannel sc = c.accept(); // receive socket
-                        sc.configureBlocking(false);
-                        sc.register(selector, SelectionKey.OP_WRITE);
-
-                        // manager.registeClient(sc, name, t);
-
-                    } else if (key.isReadable()) {
-                        outPut("Readable");
-                        SocketChannel sc = (SocketChannel) key.channel();
-                        ByteBuffer buffer = ByteBuffer.allocate(16384);
-                        sc.read(buffer);
-                        outPut(new String(buffer.array()));
-
-                    } else if (key.isWritable()) {
-                        SocketChannel sc = (SocketChannel) key.channel();
-
-                        if (manager.isLogin(sc)) {
-
-                        } else {
-                            ByteBuffer b = ByteBuffer.wrap(Constant.PROPMT.getBytes(Charset.forName("UTF-8")));
-                            sc.write(b);
-                        }
-
-                    }
-
-                }
-
-            } catch (IOException e) {
-                throw new NioException("Accept, Read, Write error..", e);
+            switch (status) {
+            case NOT_LOGIN:
+                writeContext = Constant.PROPMT;
+                break;
+            case LOGIN_SUCCESS:
+                writeContext = Constant.LOGIN_SUCCESS;
+                break;
+            case CHAT:
+                writeContext = Constant.CHAT;
+                break;
+            default:
+                break;
             }
 
+            ByteBuffer b = ByteBuffer.wrap(writeContext.getBytes(Charset.forName("UTF-8")));
+            sc.write(b);
+            sc.register(selector, SelectionKey.OP_READ);
+
+        }
+    }
+
+    @Override
+    protected void stopServer() {
+        if (server != null) {
+            try {
+                server.close();
+            } catch (IOException e) {
+                log.error("IOException occurred when close channel server..", e);
+            }
         }
 
     }

@@ -18,6 +18,7 @@ import javafx.scene.image.Image;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
+@SuppressWarnings("restriction")
 public class MainGui extends Application {
     private static Logger logger = Logger.getLogger(MainGui.class.getName());
     private Stage primaryStage;
