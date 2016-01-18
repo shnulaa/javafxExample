@@ -16,7 +16,6 @@ public class ClientInfo implements Serializable {
      * serialVersionUID
      */
     private static final long serialVersionUID = -1712911849773956991L;
-    // private static final String PREFIX = "guest_";
 
     public ClientInfo() {
     }

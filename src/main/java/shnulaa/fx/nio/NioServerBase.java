@@ -1,8 +1,9 @@
 package shnulaa.fx.nio;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -10,6 +11,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,8 +40,6 @@ public abstract class NioServerBase implements IServer {
     protected abstract void progress(SelectionKey key) throws IOException;
 
     protected abstract void stopServer();
-
-    // protected abstract void logoff();
 
     public NioServerBase() {
         clientInfo = Maps.newConcurrentMap();
@@ -73,9 +73,30 @@ public abstract class NioServerBase implements IServer {
                         continue;
                     }
 
-                    // if (key.is)
-                    progress(key);
+                    try {
+                        progress(key);
+                    } catch (IOException ex) {
+                        key.cancel();
+                        final SelectableChannel channel = key.channel();
+                        if (channel != null && (channel instanceof SocketChannel)) {
+                            ClientInfo info = clientInfo.remove(channel);
+                            if (info != null) {
+                                final String message = "User:" + info.getName() + " logout successfully..";
+
+                                outPut(message, true);
+                                notify((SocketChannel) channel,
+                                        message + Constant.BR + Constant.SPLIT2 + Constant.BR + Constant.CHAT);
+                            }
+                            channel.close();
+                        } else {
+                            log.warn("channel is not the instance of SocketChannel when IOException occurred..");
+                        }
+                    }
+
                 }
+            } catch (ClosedChannelException ex) {
+                log.error("Exception occurred when Accept, Read, Write..", ex);
+                break;
             } catch (Exception e) {
                 log.error("Exception occurred when Accept, Read, Write..", e);
                 // logoff();1
@@ -83,8 +104,36 @@ public abstract class NioServerBase implements IServer {
         }
     }
 
+    protected void notify(SocketChannel self, String message) {
+        Iterator<SocketChannel> i = clientInfo.keySet().iterator();
+
+        while (i.hasNext()) {
+            SocketChannel item = (SocketChannel) i.next();
+            if (self != item) {
+                try {
+                    ByteBuffer b = ByteBuffer.wrap(message.getBytes(Constant.CHARSET));
+                    item.write(b);
+                } catch (IOException e) {
+                    log.error("IOException occurred when notify..", e);
+                }
+            } else {
+                log.debug("self notify is not allowed..");
+            }
+        }
+    }
+
     protected void outPut(String message) {
         this.messageOutputImpl.output(message);
+    }
+
+    protected void outPut(String message, boolean withSplit) {
+        if (withSplit) {
+            this.messageOutputImpl.output(Constant.SPLIT);
+        }
+        this.messageOutputImpl.output(message);
+        if (withSplit) {
+            this.messageOutputImpl.output(Constant.SPLIT);
+        }
     }
 
     public boolean isLogin(final SocketChannel channel) {
@@ -122,10 +171,20 @@ public abstract class NioServerBase implements IServer {
         }
     }
 
-    protected String decode(ByteBuffer readBuffer) {
+    protected String decode(ByteBuffer readBuffer, boolean ignoreBr) {
         try {
-            return new String(readBuffer.array(), "UTF-8");
-        } catch (UnsupportedEncodingException ex) {
+            readBuffer.flip(); // flip the buffer for reading
+            byte[] bytes = new byte[readBuffer.remaining()]; // create a byte
+                                                             // array
+                                                             // the length of
+                                                             // the
+                                                             // number of bytes
+                                                             // written to the
+                                                             // buffer
+            readBuffer.get(bytes); // read the bytes that were written
+            String packet = new String(bytes, Constant.CHARSET);
+            return ignoreBr ? packet.replaceAll("\n", StringUtils.EMPTY) : packet;
+        } catch (Exception ex) {
             log.error("decode ByteBuffer error..", ex);
             throw new NioException("decode ByteBuffer error..", ex);
         }
@@ -135,9 +194,10 @@ public abstract class NioServerBase implements IServer {
         Iterator<SocketChannel> i = clientInfo.keySet().iterator();
         while (i.hasNext()) {
             SocketChannel sc = (SocketChannel) i.next();
-            if (sc != null && sc.isOpen()) {
+            if (sc != null) {
                 try {
-                    sc.close();
+                    if (sc.isOpen())
+                        sc.close();
                 } catch (IOException e) {
                     log.error("IOException occurred when close socketChannel..", e);
                 }
@@ -149,6 +209,15 @@ public abstract class NioServerBase implements IServer {
                 t.interrupt();
             }
 
+        }
+
+        if (selector != null) {
+            try {
+                if (selector.isOpen())
+                    selector.close();
+            } catch (IOException e) {
+                log.error("IOException occurred when close selector..", e);
+            }
         }
 
         stopServer();
