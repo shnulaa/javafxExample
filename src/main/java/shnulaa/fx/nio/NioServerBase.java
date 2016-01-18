@@ -3,6 +3,7 @@ package shnulaa.fx.nio;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -92,14 +93,15 @@ public abstract class NioServerBase implements IServer {
                             log.warn("channel is not the instance of SocketChannel when IOException occurred..");
                         }
                     }
-
                 }
             } catch (ClosedChannelException ex) {
-                log.error("Exception occurred when Accept, Read, Write..", ex);
+                log.error("ClosedChannelException occurred when Accept, Read, Write, break..", ex);
+                break;
+            } catch (ClosedSelectorException ex) {
+                log.error("ClosedSelectorException occurred when Accept, Read, Write, break..", ex);
                 break;
             } catch (Exception e) {
                 log.error("Exception occurred when Accept, Read, Write..", e);
-                // logoff();1
             }
         }
     }
