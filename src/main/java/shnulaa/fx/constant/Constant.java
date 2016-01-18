@@ -14,8 +14,6 @@ public class Constant {
     public static final int BUFFER_SIZE = 16384;
     public static final String SPLIT = "==================================";
     public static final String SPLIT2 = "----------------------------------";
-
     public static final Charset CHARSET = Charset.forName("gb2312");
-
     public static final String TITLE = "Nio Fx Demo";
 }
