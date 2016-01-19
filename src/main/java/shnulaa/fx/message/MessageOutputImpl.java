@@ -12,17 +12,19 @@ public class MessageOutputImpl {
     }
 
     public void output(String message) {
-        this.textArea.appendText(message + Constant.BR);
+        append(message);
     }
 
     public void output(String message, boolean withSplit) {
+        String text = message;
         if (withSplit) {
-            this.textArea.appendText(Constant.SPLIT + Constant.BR);
+            text = Constant.SPLIT + Constant.BR + message + Constant.BR + Constant.SPLIT;
         }
-        this.textArea.appendText(message+ Constant.BR);
-        if (withSplit) {
-            this.textArea.appendText(Constant.SPLIT + Constant.BR);
-        }
+        append(text);
+    }
+
+    private void append(String text) {
+        javafx.application.Platform.runLater(() -> textArea.appendText(text + Constant.BR));
     }
 
 }
