@@ -17,11 +17,11 @@ public class MessageOutputImpl {
 
     public void output(String message, boolean withSplit) {
         if (withSplit) {
-            this.textArea.appendText(Constant.SPLIT);
+            this.textArea.appendText(Constant.SPLIT + Constant.BR);
         }
-        this.textArea.appendText(message);
+        this.textArea.appendText(message+ Constant.BR);
         if (withSplit) {
-            this.textArea.appendText(Constant.SPLIT);
+            this.textArea.appendText(Constant.SPLIT + Constant.BR);
         }
     }
 

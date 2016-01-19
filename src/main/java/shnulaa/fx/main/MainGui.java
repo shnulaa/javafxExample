@@ -37,7 +37,7 @@ public class MainGui extends Application {
 
         Platform.setImplicitExit(false);
         this.primaryStage = primaryStage;
-        this.primaryStage.setTitle("Server Configuration");
+        this.primaryStage.setTitle("Java Fx Nio chat Demo");
 
         try {
             // Load the root layout from the fxml file
