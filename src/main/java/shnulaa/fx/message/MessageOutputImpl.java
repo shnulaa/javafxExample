@@ -15,4 +15,14 @@ public class MessageOutputImpl {
         this.textArea.appendText(message + Constant.BR);
     }
 
+    public void output(String message, boolean withSplit) {
+        if (withSplit) {
+            this.textArea.appendText(Constant.SPLIT);
+        }
+        this.textArea.appendText(message);
+        if (withSplit) {
+            this.textArea.appendText(Constant.SPLIT);
+        }
+    }
+
 }

@@ -6,9 +6,11 @@ import java.awt.TrayIcon;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -20,10 +22,10 @@ import javafx.stage.Stage;
 
 @SuppressWarnings("restriction")
 public class MainGui extends Application {
-    private static Logger logger = Logger.getLogger(MainGui.class.getName());
+    private static Logger log = LoggerFactory.getLogger(MainGui.class);
+
     private Stage primaryStage;
     private Scene rootScene;
-    // private MainLayoutController controller;
     private TrayIcon trayIcon;
 
     public static void main(String[] args) {
@@ -40,25 +42,18 @@ public class MainGui extends Application {
         try {
             // Load the root layout from the fxml file
             FXMLLoader mainLayoutLoader = new FXMLLoader(MainGui.class.getResource("/ui/MainLayout.fxml"));
-            // mainLayoutLoader
-            // .setResources(ResourceBundle.getBundle("resources.bundle.ui",
-            // Constant.LOCALE, new UTF8Control()));
             Pane rootLayout = mainLayoutLoader.load();
 
             rootScene = new Scene(rootLayout);
             primaryStage.setScene(rootScene);
             primaryStage.setResizable(false);
 
-            // controller = mainLayoutLoader.getController();
-            // controller.setMainGui(this);
-
             addToTray();
 
             primaryStage.getIcons().add(new Image(MainGui.class.getResource("/image/icon.png").toString()));
             primaryStage.show();
         } catch (IOException e) {
-            // Exception gets thrown if the fxml file could not be loaded
-            e.printStackTrace();
+            log.error("IOException occurred when load MainLayout.fxml..", e);
         }
     }
 
@@ -68,7 +63,7 @@ public class MainGui extends Application {
 
         // make sure system tray is supported
         if (!java.awt.SystemTray.isSupported()) {
-            logger.warning("No system tray support!");
+            log.warn("No system tray support!");
         }
 
         final java.awt.SystemTray tray = java.awt.SystemTray.getSystemTray();
@@ -119,9 +114,9 @@ public class MainGui extends Application {
             trayIcon.setToolTip("Not Connected");
             tray.add(trayIcon);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("IOException occurred when addToTray..", e);
         } catch (AWTException e) {
-            e.printStackTrace();
+            log.error("AWTException occurred when addToTray..", e);
         }
     }
 
@@ -140,6 +135,6 @@ public class MainGui extends Application {
     }
 
     public void showNotification(String message) {
-        trayIcon.displayMessage("shadowsocks-java", message, java.awt.TrayIcon.MessageType.INFO);
+        trayIcon.displayMessage("Nio fx Demo", message, java.awt.TrayIcon.MessageType.INFO);
     }
 }

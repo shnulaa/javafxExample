@@ -129,13 +129,7 @@ public abstract class NioServerBase implements IServer {
     }
 
     protected void outPut(String message, boolean withSplit) {
-        if (withSplit) {
-            this.messageOutputImpl.output(Constant.SPLIT);
-        }
-        this.messageOutputImpl.output(message);
-        if (withSplit) {
-            this.messageOutputImpl.output(Constant.SPLIT);
-        }
+        this.messageOutputImpl.output(message, withSplit);
     }
 
     public boolean isLogin(final SocketChannel channel) {

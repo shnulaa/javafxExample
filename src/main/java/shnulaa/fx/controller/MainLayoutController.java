@@ -14,8 +14,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import shnulaa.fx.constant.Constant;
+import shnulaa.fx.message.MessageOutputImpl;
+import shnulaa.fx.nio.IServer;
 import shnulaa.fx.nio.LocalNioServer;
-import shnulaa.fx.nio.NioServerBase;
 
 @SuppressWarnings("restriction")
 public class MainLayoutController {
@@ -40,18 +41,33 @@ public class MainLayoutController {
     @FXML
     private TextArea listenArea;
 
+    /** the service create a new thread for receive the connection **/
     private ExecutorService service;
 
-    private NioServerBase base;
+    /** the worker of local Nio server, use for shutdown the server **/
+    private IServer base;
+
+    /** use for output the message in textArea **/
+    private MessageOutputImpl outputImpl;
+
+    /**
+     * constructor
+     */
+    public MainLayoutController() {
+    }
 
     @FXML
     private void initialize() {
-        System.out.println("initialize");
-        listenPort.setText("1234");
+        log.debug("Initialize the Controller..");
+        this.outputImpl = new MessageOutputImpl(listenArea);
+        listenPort.setText(String.valueOf(Constant.DEFAULT_PORT));
         listen.setDisable(false);
         stop.setDisable(true);
     }
 
+    /**
+     * the action for handle the button of listen
+     */
     @FXML
     private void handleListen() {
         String portText = listenPort.getText();
@@ -67,6 +83,7 @@ public class MainLayoutController {
                 return;
             }
 
+            log.debug("Start Local service and ready to listen port: {}..", port);
             service = Executors.newSingleThreadExecutor();
             base = new LocalNioServer(listenArea, port);
             service.execute(base);
@@ -75,17 +92,19 @@ public class MainLayoutController {
             stop.setDisable(false);
 
         } catch (Exception ex) {
-            if (ex instanceof NumberFormatException) {
-                showAlert(Constant.TITLE, "Port is not number..", Alert.AlertType.ERROR);
-            } else {
-                showAlert(Constant.TITLE, ex.getMessage(), Alert.AlertType.ERROR);
-            }
+            log.error("Exception occurred when execute the LocalNioServer..", ex);
+            showAlert(Constant.TITLE, (ex instanceof NumberFormatException) ? "Port is not number.." : ex.getMessage(),
+                    Alert.AlertType.ERROR);
         }
     }
 
+    /**
+     * the action for handle the button of stop
+     */
     @FXML
     private void handleStop() {
         try {
+            log.debug("Read to Shutdown the service..");
             if (base != null) {
                 base.stop();
             }
@@ -93,8 +112,12 @@ public class MainLayoutController {
             if (service != null) {
                 service.shutdown();
             }
+            outputImpl.output("Shutdown service successfully..", true);
+
             listen.setDisable(false);
             stop.setDisable(true);
+
+            log.debug("Shutdown the service successfully..");
 
         } catch (Exception ex) {
             log.error("Exception occurred when handleStop", ex);
@@ -102,9 +125,13 @@ public class MainLayoutController {
         }
     }
 
+    /**
+     * the action for handle the button of clear
+     */
     @FXML
     private void handleClear() {
         if (listenArea != null) {
+            log.debug("Clear the information in textarea..");
             listenArea.clear();
         }
     }
