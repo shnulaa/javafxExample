@@ -25,9 +25,15 @@ import shnulaa.fx.info.ClientInfo.Status;
 import shnulaa.fx.message.MessageOutputImpl;
 import shnulaa.fx.pool.TPools;
 
+/**
+ * NioServerBase
+ * 
+ * @author liuyq
+ *
+ */
 public abstract class NioServerBase implements IServer {
 
-    private static Logger log = LoggerFactory.getLogger(LocalNioServer.class);
+    private static Logger log = LoggerFactory.getLogger(NioServerBase.class);
     protected int port;
     protected Selector selector;
 
